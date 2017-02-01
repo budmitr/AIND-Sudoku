@@ -3,11 +3,54 @@
 
 # Question 1 (Naked Twins)
 Q: How do we use constraint propagation to solve the naked twins problem?  
-A: *Student should provide answer here*
+A: Within a given unit I define which values are naked twins -- they are equal, 2 symbls long and appear only twice.
+Having these defined, I eliminated possible values from other boxes in current unit.
+I used python's `set` to simplify elimination since digits can have unordered positions.
+Full code of naked_twins presented below
+
+```
+result = values.copy()
+
+# Find all instances of naked twins
+for unit in unitlist:
+    # First, collect values of current unit
+    vals = [values[box] for box in unit]
+
+    # Iterate over values and select only values with length of 2 which occure 2 times
+    twins = set([v for v in vals if len(v) == 2 and vals.count(v) == 2])
+
+    # If no twins found, make next iteration
+    if not len(twins):
+        continue
+
+    # Eliminate!
+    for box in unit:
+        # Eliminate only from values with length bigger than 2
+        if len(result[box]) < 3:
+            continue
+
+        # Represent box value as set to use subset operation
+        boxset = set(result[box])
+        for t in twins:
+            # if set(t).issubset(boxset):
+            boxset = boxset - set(t)
+
+        result[box] = ''.join(sorted(list(boxset)))
+
+return result
+```
 
 # Question 2 (Diagonal Sudoku)
 Q: How do we use constraint propagation to solve the diagonal sudoku problem?  
-A: *Student should provide answer here*
+A: Constraint propagation already includes a set of row, column and 3x3 units.
+I just added 2 diagonal units into list and used them within already prepared flow of elimination and only-choice methods.
+Here is a snipped of generating 2 additional diag units:
+```
+diag_units = [
+    [rows[i] + cols[i] for i in range(9)],
+    [rows[::-1][i] + cols[i] for i in range(9)],
+]
+```
 
 ### Install
 

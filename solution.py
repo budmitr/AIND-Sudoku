@@ -2,13 +2,22 @@ assignments = []
 rows = 'ABCDEFGHI'
 cols = '123456789'
 
-boxes = []
-row_units = []
-column_units = []
-square_units = []
-unitlist = []
-units = {}
-peers = {}
+
+def cross(a, b):
+    """Cross product of elements in A and elements in B."""
+    return [s+t for s in a for t in b]
+
+boxes = cross(rows, cols)
+row_units = [cross(r, cols) for r in rows]
+column_units = [cross(rows, c) for c in cols]
+square_units = [cross(rs, cs) for rs in ('ABC', 'DEF', 'GHI') for cs in ('123', '456', '789')]
+diag_units = [
+    [rows[i] + cols[i] for i in range(9)],
+    [rows[::-1][i] + cols[i] for i in range(9)],
+]
+unitlist = row_units + column_units + square_units + diag_units
+units = dict((s, [u for u in unitlist if s in u]) for s in boxes)
+peers = dict((s, set(sum(units[s], [])) - set([s])) for s in boxes)
 
 
 def assign_value(values, box, value):
@@ -30,14 +39,35 @@ def naked_twins(values):
     Returns:
         the values dictionary with the naked twins eliminated from peers.
     """
+    result = values.copy()
 
     # Find all instances of naked twins
-    # Eliminate the naked twins as possibilities for their peers
+    for unit in unitlist:
+        # First, collect values of current unit
+        vals = [values[box] for box in unit]
 
+        # Iterate over values and select only values with length of 2 which occure 2 times
+        twins = set([v for v in vals if len(v) == 2 and vals.count(v) == 2])
 
-def cross(a, b):
-    """Cross product of elements in A and elements in B."""
-    return [s+t for s in a for t in b]
+        # If no twins found, make next iteration
+        if not len(twins):
+            continue
+
+        # Eliminate!
+        for box in unit:
+            # Eliminate only from values with length bigger than 2
+            if len(result[box]) < 3:
+                continue
+
+            # Represent box value as set to use subset operation
+            boxset = set(result[box])
+            for t in twins:
+                # if set(t).issubset(boxset):
+                boxset = boxset - set(t)
+
+            result[box] = ''.join(sorted(list(boxset)))
+
+    return result
 
 
 def grid_values(grid):
@@ -106,7 +136,7 @@ def only_choice(values):
     """
     result = values.copy()
 
-    # For every unit check in which boxes does every single digit appers
+    # For every unit check in which boxes does every single digit appears
     # If a digit appears only in one box, assign it as box value -- no other boxes can have this value
     for unit in unitlist:
         for digit in '123456789':
@@ -134,7 +164,7 @@ def reduce_puzzle(values):
 
         # Apply constraint propagation step
         result = eliminate(result)
-        # TODO: add naked_twins here
+        result = naked_twins(result)
         result = only_choice(result)
 
         # Check how many boxes have a determined value, to compare
@@ -206,18 +236,8 @@ def solve(grid):
 
 
 if __name__ == '__main__':
-    boxes = cross(rows, cols)
-    row_units = [cross(r, cols) for r in rows]
-    column_units = [cross(rows, c) for c in cols]
-    square_units = [cross(rs, cs) for rs in ('ABC', 'DEF', 'GHI') for cs in ('123', '456', '789')]
-    unitlist = row_units + column_units + square_units
-    units = dict((s, [u for u in unitlist if s in u]) for s in boxes)
-    peers = dict((s, set(sum(units[s], [])) - set([s])) for s in boxes)
-
-    # diag_sudoku_grid = '2.............62....1....7...6..8...3...9...7...6..4...4....8....52.............3'
-    # display(solve(diag_sudoku_grid))
-    simple_grid = '4.....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......'
-    display(solve(simple_grid))
+    diag_sudoku_grid = '2.............62....1....7...6..8...3...9...7...6..4...4....8....52.............3'
+    display(solve(diag_sudoku_grid))
 
     try:
         from visualize import visualize_assignments
